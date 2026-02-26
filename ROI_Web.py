@@ -281,16 +281,16 @@ def main():
     
     st.set_page_config(page_title="ROI Tool Kit", layout="wide")
     st.title("ROI Analysis")
-    # if "authenticated" not in st.session_state:
-    #     st.session_state.authenticated = False
+    if "authenticated" not in st.session_state:
+        st.session_state.authenticated = False
 
-    # if not st.session_state.authenticated:
-    #     show_login()
-    #     st.stop()
+    if not st.session_state.authenticated:
+        show_login()
+        st.stop()
 
-    # if st.sidebar.button("Logout"):
-    #     st.session_state.authenticated = False
-    #     st.rerun()
+    if st.sidebar.button("Logout"):
+        st.session_state.authenticated = False
+        st.rerun()
     
     values, execute = input_sidebar()
 
