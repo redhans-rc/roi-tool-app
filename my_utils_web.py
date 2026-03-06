@@ -73,7 +73,7 @@ def build_revenue_rows(
             "AUTHENTICATION VOLUME": format_int(s_totalsucc * 12),
             "YEARLY COST": format_currency((m_vol * 12) * sms_price),
             "TCO": format_currency(0),
-            "NEW CUSTOMERS": format_int(0),
+            "VOLUME LIFT": format_int(0),
         },
         {
             "SCENARIO": "SMS + SA (standard)",
@@ -81,8 +81,11 @@ def build_revenue_rows(
             "AUTHENTICATION VOLUME": format_int(sa_totalsucc * 12),
             "YEARLY COST": format_currency(sa_totalcost * 12),
             "TCO": format_currency((sa_totalcost * 12) - (s_totalcost * 12)),
-            "NEW CUSTOMERS": format_int(
+            "VOLUME LIFT": format_int(
                 (sa_totalsucc * 12 - s_totalsucc * 12) 
+            ),
+            "VOLUME - $ VALUE ": format_int(
+                (sa_totalsucc * 12 - s_totalsucc * 12) * ux_rev_client
             ),
         },
         {
@@ -91,8 +94,11 @@ def build_revenue_rows(
             "AUTHENTICATION VOLUME": format_int(m_vol * 12),
             "YEARLY COST": format_currency(m_vol * 12 * sa_price),
             "TCO": format_currency((m_vol * 12 * sa_price) - (s_totalcost * 12)),
-            "NEW CUSTOMERS": format_int(
+            "VOLUME LIFT": format_int(
                 (m_vol * 12 - s_totalsucc * 12) 
+            ),
+            "VOLUME - $ VALUE ": format_int(
+                (m_vol * 12 - s_totalsucc * 12) * ux_rev_client
             ),
         },
     ]
@@ -125,42 +131,49 @@ def build_table_rows(
     rows = [
         {
             "SCENARIO": f"Signup {int(ux_signup)} %",
-            "Current State - Settings": format_currency(capped(total_uplift * signup_ratio *ux_rev_client)),
-            "Conservative + 10 %": format_currency(capped(total_uplift * (signup_ratio+0.1)*ux_rev_client )),
-            "Likely + 20 %": format_currency(capped(total_uplift * (signup_ratio+0.2)*ux_rev_client)),
-            "Aggressive + 30 %": format_currency(capped(total_uplift * (signup_ratio+0.3)*ux_rev_client)),
+            "Current State - Settings Values": format_currency(capped(total_uplift * signup_ratio *ux_rev_client)),
+            "Conservative (20 %)": format_currency(capped(total_uplift * (signup_ratio+0.1)*ux_rev_client )),
+            "Likely (30 %)": format_currency(capped(total_uplift * (signup_ratio+0.2)*ux_rev_client)),
+            "Aggressive (40 %)": format_currency(capped(total_uplift * (signup_ratio+0.3)*ux_rev_client)),
             # "Aggressive": format_currency(total_uplift),
         },
                 {
             "SCENARIO": f"{int(drp_off)} % Drop off during Signups ",
-            "Current State - Settings": f"{format_currency(total_uplift * signup_ratio *(drp_off_ratio)*ux_rev_client)}",
-            "Conservative + 10 %": f"{format_currency(total_uplift *  signup_ratio*(0.1+drp_off_ratio)*ux_rev_client)}",
-            "Likely + 20 %": f"{format_currency(total_uplift * signup_ratio*(drp_off_ratio+0.2)*ux_rev_client)}",
-            "Aggressive + 30 %": f"{format_currency(total_uplift * signup_ratio*(drp_off_ratio+0.3)*ux_rev_client)}",
+            "Current State - Settings Values": f"{format_currency(total_uplift * signup_ratio *(drp_off_ratio)*ux_rev_client)}",
+            "Conservative (20 %)": f"{format_currency(total_uplift *  signup_ratio*(0.1+drp_off_ratio)*ux_rev_client)}",
+            "Likely (30 %)": f"{format_currency(total_uplift * signup_ratio*(drp_off_ratio+0.2)*ux_rev_client)}",
+            "Aggressive (40 %)": f"{format_currency(total_uplift * signup_ratio*(drp_off_ratio+0.3)*ux_rev_client)}",
         },
                         {
             "SCENARIO": f"{int(ux_cc_interaction)} % Call Center Interactions ",
-            "Current State - Settings": f"{format_currency(total_uplift * signup_ratio *ux_cc_interaction_ration*ux_cc_cost)}",
-            "Conservative + 10 %": f"{format_currency(total_uplift * (signup_ratio)*(ux_cc_interaction_ration+0.01)*ux_cc_cost)}",
-            "Likely + 20 %": f"{format_currency(total_uplift * (signup_ratio)*(ux_cc_interaction_ration+0.02)*ux_cc_cost)}",
-            "Aggressive + 30 %": f"{format_currency(total_uplift * (signup_ratio)*(ux_cc_interaction_ration+0.03)*ux_cc_cost)}",
+            "Current State - Settings Values": f"{format_currency(total_uplift * signup_ratio *ux_cc_interaction_ration*ux_cc_cost)}",
+            "Conservative (20 %)": f"{format_currency(total_uplift * (signup_ratio)*(ux_cc_interaction_ration+0.01)*ux_cc_cost)}",
+            "Likely (30 %)": f"{format_currency(total_uplift * (signup_ratio)*(ux_cc_interaction_ration+0.02)*ux_cc_cost)}",
+            "Aggressive (40 %)": f"{format_currency(total_uplift * (signup_ratio)*(ux_cc_interaction_ration+0.03)*ux_cc_cost)}",
         },
         
     ]
 
     sum_columns = [
-        "Current State - Settings",
-        "Conservative + 10 %",
-        "Likely + 20 %",
-        "Aggressive + 30 %",
+        "Current State - Settings Values",
+        "Conservative (20 %)",
+        "Likely (30 %)",
+        "Aggressive (40 %)",
     ]
 
     def to_number(currency_text):
         return float(str(currency_text).replace("$", "").replace(",", ""))
 
-    total_row = {"SCENARIO": "SUM"}
+    excluded_from_sum = {"Drop off during Signups"}
+    rows_for_sum = [
+        row
+        for row in rows
+        if not any(excluded_label in str(row.get("SCENARIO", "")) for excluded_label in excluded_from_sum)
+    ]
+
+    total_row = {"SCENARIO": "TOTAL"}
     for col in sum_columns:
-        total_row[col] = format_currency(sum(to_number(row[col]) for row in rows))
+        total_row[col] = format_currency(sum(to_number(row[col]) for row in rows_for_sum))
 
     rows.append(total_row)
     return rows
