@@ -17,7 +17,7 @@ def setup_custom_health_check():
         server = Server.get_current()
         if server:
             server._app.add_handlers(r".*", [
-                (r"/_/health", CustomHealthHandler)
+                (r"/_streamlit/healthz", CustomHealthHandler)
             ])
     except Exception:
         pass
@@ -162,10 +162,22 @@ def calculate(values):
         
     )
 
-    sum_row = next((row for row in table_rows if row.get("SCENARIO") == "SUM"), None)
+    sum_row = next(
+        (
+            row
+            for row in table_rows
+            if str(row.get("SCENARIO", "")).strip().lower() == "total"
+        ),
+        None,
+    )
     if sum_row:
+        annual_benefit_value = (
+            sum_row.get("Current State - Settings")
+            or sum_row.get("Current State - Settings Values")
+            or "0"
+        )
         annual_benefit = parse_float(
-            str(sum_row.get("Current State - Settings", "0")).replace("$", "").replace(",", ""),
+            str(annual_benefit_value).replace("$", "").replace(",", ""),
             0.0,
         )
     else:
@@ -356,15 +368,24 @@ def main():
         unsafe_allow_html=True
     )
     with chart_col:
-        st.pyplot(result["figure"], width=810)
+        st.pyplot(result["figure"], use_container_width=True)
     st.write("")
     st.write("")
     st.write("")
     st.markdown(
-        "<h3 style='text-align: center;font-weight: bold'>Revenue Lift Per Year</h3>",
+        "<h3 style='text-align: center;font-weight: bold'>YEARLY VOLUME LIFT AND TCO</h3>",
         unsafe_allow_html=True
     )
+    
     st.dataframe(result["revenue_rows"], hide_index=True, use_container_width=True)
+    st.write("")
+    st.write("")
+    st.write("")
+    st.markdown(
+        "<h3 style='text-align: center;font-weight: bold'>YEARLY BENEFITS</h3>",
+        unsafe_allow_html=True
+    )
+    
     st.dataframe(result["table_rows"], hide_index=True, use_container_width=True)
 # *********************************SUMMARY FOR TESTING ***********
     
